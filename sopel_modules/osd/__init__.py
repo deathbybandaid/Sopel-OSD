@@ -21,9 +21,18 @@ def configure(config):
 
 
 def setup(bot):
+
+    # Inject OSD
     stderr("Implanting Sopel-OSD")
     bot.osd = SopelOSD.osd
     bot.SopelWrapper.osd = SopelOSD.SopelWrapper.osd
+
+    # overwrite default bot messaging
+    stderr("Overwrite Default Sopel messaging commands.")
+    bot.SopelWrapper.say = SopelOSD.SopelWrapper.say
+    bot.SopelWrapper.action = SopelOSD.SopelWrapper.action
+    bot.SopelWrapper.notice = SopelOSD.SopelWrapper.notice
+    bot.SopelWrapper.reply = SopelOSD.SopelWrapper.reply
 
 
 class SopelOSD:
@@ -138,7 +147,6 @@ class SopelOSD:
                 # TODO
                 # 'flood_left': self.config.core.flood_burst_lines,
             })
-            stderr(str(recipient_stack))
             recipient_stack['dots'] = 0
 
             for text in messages_refactor:
@@ -202,3 +210,33 @@ class SopelOSD:
             if recipients is None:
                 recipients = self._trigger.sender
             self._bot.osd(self, messages, recipients, text_method, max_messages)
+
+        def say(self, message, destination=None, max_messages=1):
+            if destination is None:
+                destination = self._trigger.sender
+            self._bot.osd(self, message, destination, 'PRIVMSG', 1)
+            # self._bot.say(message, destination, max_messages)
+
+        def action(self, message, destination=None, max_messages=1):
+            if destination is None:
+                destination = self._trigger.sender
+            self._bot.osd(self, message, destination, 'ACTION', 1)
+            # self._bot.action(message, destination, max_messages)
+
+        def notice(self, message, destination=None, max_messages=1):
+            if destination is None:
+                destination = self._trigger.sender
+            self._bot.osd(self, message, destination, 'NOTICE', 1)
+            # self._bot.notice(message, destination, max_messages)
+
+        def reply(self, message, destination=None, reply_to=None, notice=False, max_messages=1):
+            if destination is None:
+                destination = self._trigger.sender
+            if reply_to is None:
+                reply_to = self._trigger.nick
+            message = '%s: %s' % (reply_to, message)
+            if notice:
+                self._bot.osd(self, message, destination, 'NOTICE', 1)
+            else:
+                self._bot.osd(self, message, destination, 'PRIVMSG', 1)
+            # self._bot.reply(message, destination, reply_to, notice, max_messages)
