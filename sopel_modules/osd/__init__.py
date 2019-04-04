@@ -3,6 +3,10 @@
 
 Sopel OSD is a "niche" method of displaying text in a Sopel bot
 """
+
+# pylama:ignore=W0611
+
+
 from __future__ import unicode_literals, absolute_import, division, print_function
 
 import sopel.bot
