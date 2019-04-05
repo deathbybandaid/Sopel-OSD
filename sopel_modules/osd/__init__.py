@@ -3,12 +3,17 @@
 
 Sopel OSD is a "niche" method of displaying text in a Sopel bot
 """
+
+# pylama:ignore=W0611
+
+
 from __future__ import unicode_literals, absolute_import, division, print_function
 
 import sopel.bot
 from sopel.tools import stderr, Identifier
 
 import time
+import collections
 
 
 __author__ = 'Sam Zick'
@@ -76,6 +81,9 @@ class SopelOSD:
         text_method = text_method.upper()
         if text_method == 'SAY' or text_method not in ['NOTICE', 'ACTION']:
             text_method = 'PRIVMSG'
+
+        if isinstance(recipients, collections.abc.KeysView):
+            recipients = [x for x in recipients]
 
         if not isinstance(recipients, list):
             recipients = recipients.split(",")
