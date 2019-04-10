@@ -92,11 +92,9 @@ class SopelOSD:
         reserved_irc_bytes = 15
         available_bytes -= reserved_irc_bytes
         if not self.users or not self.users.contains(self.nick):
-            hostmaskbytes = len((self.nick).encode('utf-8'))
-            hostmaskbytes += 63 - hostmaskbytes
+            available_bytes -= len((self.nick).encode('utf-8')) + 12 + 63
         else:
-            hostmaskbytes = len((self.users.get(self.nick).hostmask).encode('utf-8'))
-        available_bytes -= hostmaskbytes
+            available_bytes -= len((self.users.get(self.nick).hostmask).encode('utf-8'))
         # TODO available_bytes -= len((self.hostmask).encode('utf-8'))
 
         maxtargets = 4
