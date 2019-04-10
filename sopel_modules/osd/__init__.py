@@ -88,6 +88,9 @@ class SopelOSD:
         if not isinstance(recipients, list):
             recipients = recipients.split(",")
 
+        if not len(recipients):
+            raise ValueError("Recipients list empty.")
+
         available_bytes = 512
         reserved_irc_bytes = 15
         available_bytes -= reserved_irc_bytes
