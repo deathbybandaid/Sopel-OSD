@@ -28,12 +28,12 @@ def configure(config):
 def setup(bot):
 
     # Inject OSD
-    stderr("Implanting Sopel-OSD")
+    stderr("[Sopel-OSD] Implanting OSD function into bot.")
     bot.osd = SopelOSD.osd
     bot.SopelWrapper.osd = SopelOSD.SopelWrapper.osd
 
     # overwrite default bot messaging
-    stderr("Overwrite Default Sopel messaging commands.")
+    stderr("[Sopel-OSD] Overwrite Default Sopel messaging commands.")
     bot.SopelWrapper.say = SopelOSD.SopelWrapper.say
     bot.SopelWrapper.action = SopelOSD.SopelWrapper.action
     bot.SopelWrapper.notice = SopelOSD.SopelWrapper.notice
