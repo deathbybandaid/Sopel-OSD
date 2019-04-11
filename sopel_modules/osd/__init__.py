@@ -10,6 +10,7 @@ Sopel OSD is a "niche" method of displaying text in a Sopel bot
 from __future__ import unicode_literals, absolute_import, division, print_function
 
 import sopel.bot
+from sopel import tools
 from sopel.tools import stderr, Identifier
 
 import time
@@ -31,6 +32,7 @@ def setup(bot):
     stderr("[Sopel-OSD] Implanting OSD function into bot.")
     bot.osd = SopelOSD.osd
     bot.SopelWrapper.osd = SopelOSD.SopelWrapper.osd
+    tools.get_sendable_message_list = ToolsOSD.get_sendable_message_list
 
     # overwrite default bot messaging
     stderr("[Sopel-OSD] Overwrite Default Sopel messaging commands.")
@@ -38,6 +40,46 @@ def setup(bot):
     bot.SopelWrapper.action = SopelOSD.SopelWrapper.action
     bot.SopelWrapper.notice = SopelOSD.SopelWrapper.notice
     bot.SopelWrapper.reply = SopelOSD.SopelWrapper.reply
+
+
+class ToolsOSD:
+
+    def get_sendable_message_list(text, available_bytes=400):
+        """Get a sendable ``text`` message, with its excess when needed.
+
+        :param str txt: unicode string of text to send
+        :param int available_bytes: maximum length of the message to be sendable
+        :return: a list of text.
+
+        We're arbitrarily saying that the max is 400 bytes of text when
+        messages will be split (if not specified).
+
+        The `available_bytes` is the max length of text in **bytes**, but we take
+        care of unicode 2-bytes characters, by working on the unicode string,
+        then making sure the bytes version is smaller than the max length.
+        """
+
+        text_refactor = ['']
+        if len(text.encode('utf-8')) <= available_bytes:
+            text_refactor[-1] = text
+        else:
+            chunks = text.split()
+            for chunk in chunks:
+                if text_refactor[-1] == '':
+                    if len(chunk.encode('utf-8')) <= available_bytes:
+                        text_refactor[-1] = chunk
+                    else:
+                        chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
+                        text_refactor.extend(chunksplit)
+                elif len((text_refactor[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
+                    text_refactor[-1] = text_refactor[-1] + " " + chunk
+                else:
+                    if len(chunk.encode('utf-8')) <= available_bytes:
+                        text_refactor.append(chunk)
+                    else:
+                        chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
+                        text_refactor.extend(chunksplit)
+        return text_refactor
 
 
 class SopelOSD:
@@ -112,6 +154,9 @@ class SopelOSD:
 
         max_recipients_bytes = max(groupbytes)
         available_bytes -= max_recipients_bytes
+
+        text_refactor = tools.get_sendable_message_list("works don't it", available_bytes)
+        stderr("[Sopel-OSD] " + str(text_refactor))
 
         messages_refactor = ['']
         # TODO add configuration for padding amount
