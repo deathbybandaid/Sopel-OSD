@@ -14,7 +14,7 @@ from sopel import tools
 from sopel.tools import stderr, Identifier
 
 import time
-import collections
+from collections import abc
 
 
 __author__ = 'Sam Zick'
@@ -32,7 +32,9 @@ def setup(bot):
     stderr("[Sopel-OSD] Implanting OSD function into bot.")
     bot.osd = SopelOSD.osd
     bot.SopelWrapper.osd = SopelOSD.SopelWrapper.osd
+    tools.get_available_message_bytes = ToolsOSD.get_available_message_bytes
     tools.get_sendable_message_list = ToolsOSD.get_sendable_message_list
+    tools.get_message_recipientgroups = ToolsOSD.get_message_recipientgroups
 
     # overwrite default bot messaging
     stderr("[Sopel-OSD] Overwrite Default Sopel messaging commands.")
@@ -44,11 +46,68 @@ def setup(bot):
 
 class ToolsOSD:
 
+    def get_message_recipientgroups(bot, recipients):
+        """
+        Split recipients into groups based on server capabilities.
+        This defaults to 4
+
+        Input can be
+            * unicode string
+            * a comma-seperated unicode string
+            * list
+            * dict_keys handy for bot.channels.keys()
+        """
+
+        if isinstance(recipients, abc.KeysView):
+            recipients = [x for x in recipients]
+
+        if not isinstance(recipients, list):
+            recipients = recipients.split(",")
+
+        if not len(recipients):
+            raise ValueError("Recipients list empty.")
+
+        maxtargets = 4
+        # TODO server.capabilities.maxtargets
+        recipientgroups = []
+        while len(recipients):
+            recipients_part = ','.join(x for x in recipients[-maxtargets:])
+            recipientgroups.append(recipients_part)
+            del recipients[-maxtargets:]
+
+        return recipientgroups
+
+    def get_available_message_bytes(bot, recipientgroups):
+        """
+        Get total available bytes for sending a message line
+
+        Total sendable bytes is 512
+            * 15 are reserved for basic IRC NOTICE/PRIVMSG and a small buffer.
+            * The bots hostmask plays a role in this count
+                Note: if unavailable, we calculate the maximum length of a hostmask
+            * The recipients we send to also is a factor. Multiple recipients reduces
+              sendable message length
+        """
+
+        available_bytes = 512
+        reserved_irc_bytes = 15
+        available_bytes -= reserved_irc_bytes
+        try:
+            hostmaskbytes = len((bot.users.get(bot.nick).hostmask).encode('utf-8'))
+        except AttributeError:
+            hostmaskbytes = len((bot.nick).encode('utf-8')) + 12 + 63
+        available_bytes -= hostmaskbytes
+
+        groupbytes = []
+        for recipients_part in recipientgroups:
+            groupbytes.append(len((recipients_part).encode('utf-8')))
+
+        max_recipients_bytes = max(groupbytes)
+        available_bytes -= max_recipients_bytes
+
+        return available_bytes
+
     def get_sendable_message_list(messages, available_bytes=400):
-
-        if not isinstance(messages, list):
-            messages = [messages]
-
         """Get a sendable list of ``text`` message, with its excess when needed.
 
         :param str txt: unicode string of text to send, or list of strings
@@ -63,37 +122,40 @@ class ToolsOSD:
         then making sure the bytes version is smaller than the max length.
         """
 
-        messages_refactor = ['']
+        if not isinstance(messages, list):
+            messages = [messages]
+
+        messages_list = ['']
         message_padding = 4 * " "
         for message in messages:
-            if len((messages_refactor[-1] + message_padding + message).encode('utf-8')) <= available_bytes:
-                if messages_refactor[-1] == '':
-                    messages_refactor[-1] = message
+            if len((messages_list[-1] + message_padding + message).encode('utf-8')) <= available_bytes:
+                if messages_list[-1] == '':
+                    messages_list[-1] = message
                 else:
-                    messages_refactor[-1] = messages_refactor[-1] + message_padding + message
+                    messages_list[-1] = messages_list[-1] + message_padding + message
             else:
                 chunknum = 0
                 chunks = message.split()
                 for chunk in chunks:
-                    if messages_refactor[-1] == '':
+                    if messages_list[-1] == '':
                         if len(chunk.encode('utf-8')) <= available_bytes:
-                            messages_refactor[-1] = chunk
+                            messages_list[-1] = chunk
                         else:
                             chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
-                            messages_refactor.extend(chunksplit)
-                    elif len((messages_refactor[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
+                            messages_list.extend(chunksplit)
+                    elif len((messages_list[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
                         if chunknum:
-                            messages_refactor[-1] = messages_refactor[-1] + " " + chunk
+                            messages_list[-1] = messages_list[-1] + " " + chunk
                         else:
-                            messages_refactor[-1] = messages_refactor[-1] + message_padding + chunk
+                            messages_list[-1] = messages_list[-1] + message_padding + chunk
                     else:
                         if len(chunk.encode('utf-8')) <= available_bytes:
-                            messages_refactor.append(chunk)
+                            messages_list.append(chunk)
                         else:
                             chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
-                            messages_refactor.extend(chunksplit)
+                            messages_list.extend(chunksplit)
                     chunknum += 1
-        return messages_refactor
+        return messages_list
 
 
 class SopelOSD:
@@ -135,41 +197,12 @@ class SopelOSD:
         if text_method == 'SAY' or text_method not in ['NOTICE', 'ACTION']:
             text_method = 'PRIVMSG'
 
-        if isinstance(recipients, collections.abc.KeysView):
-            recipients = [x for x in recipients]
-
-        if not isinstance(recipients, list):
-            recipients = recipients.split(",")
-
-        if not len(recipients):
-            raise ValueError("Recipients list empty.")
-
-        available_bytes = 512
-        reserved_irc_bytes = 15
-        available_bytes -= reserved_irc_bytes
-        try:
-            hostmaskbytes = len((self.users.get(self.nick).hostmask).encode('utf-8'))
-        except AttributeError:
-            hostmaskbytes = len((self.nick).encode('utf-8')) + 12 + 63
-        available_bytes -= hostmaskbytes
-        # TODO available_bytes -= len((self.hostmask).encode('utf-8'))
-
-        maxtargets = 4
-        # TODO server.capabilities.maxtargets
-        recipientgroups, groupbytes = [], []
-        while len(recipients):
-            recipients_part = ','.join(x for x in recipients[-maxtargets:])
-            groupbytes.append(len((recipients_part).encode('utf-8')))
-            recipientgroups.append(recipients_part)
-            del recipients[-maxtargets:]
-
-        max_recipients_bytes = max(groupbytes)
-        available_bytes -= max_recipients_bytes
-
-        messages_refactor = tools.get_sendable_message_list(messages, available_bytes)
+        recipientgroups = tools.get_message_recipientgroups(self, recipients)
+        available_bytes = tools.get_available_message_bytes(self, recipientgroups)
+        messages_list = tools.get_sendable_message_list(messages, available_bytes)
 
         if max_messages >= 1:
-            messages_refactor = messages_refactor[:max_messages]
+            messages_list = messages_list[:max_messages]
 
         for recipientgroup in recipientgroups:
 
@@ -187,7 +220,7 @@ class SopelOSD:
             })
             recipient_stack['dots'] = 0
 
-            for text in messages_refactor:
+            for text in messages_list:
 
                 try:
 
