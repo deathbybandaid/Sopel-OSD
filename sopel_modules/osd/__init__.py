@@ -44,10 +44,14 @@ def setup(bot):
 
 class ToolsOSD:
 
-    def get_sendable_message_list(text, available_bytes=400):
-        """Get a sendable ``text`` message, with its excess when needed.
+    def get_sendable_message_list(messages, available_bytes=400):
 
-        :param str txt: unicode string of text to send
+        if not isinstance(messages, list):
+            messages = [messages]
+
+        """Get a sendable list of ``text`` message, with its excess when needed.
+
+        :param str txt: unicode string of text to send, or list of strings
         :param int available_bytes: maximum length of the message to be sendable
         :return: a list of text.
 
@@ -59,27 +63,37 @@ class ToolsOSD:
         then making sure the bytes version is smaller than the max length.
         """
 
-        text_refactor = ['']
-        if len(text.encode('utf-8')) <= available_bytes:
-            text_refactor[-1] = text
-        else:
-            chunks = text.split()
-            for chunk in chunks:
-                if text_refactor[-1] == '':
-                    if len(chunk.encode('utf-8')) <= available_bytes:
-                        text_refactor[-1] = chunk
-                    else:
-                        chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
-                        text_refactor.extend(chunksplit)
-                elif len((text_refactor[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
-                    text_refactor[-1] = text_refactor[-1] + " " + chunk
+        messages_refactor = ['']
+        message_padding = 4 * " "
+        for message in messages:
+            if len((messages_refactor[-1] + message_padding + message).encode('utf-8')) <= available_bytes:
+                if messages_refactor[-1] == '':
+                    messages_refactor[-1] = message
                 else:
-                    if len(chunk.encode('utf-8')) <= available_bytes:
-                        text_refactor.append(chunk)
+                    messages_refactor[-1] = messages_refactor[-1] + message_padding + message
+            else:
+                chunknum = 0
+                chunks = message.split()
+                for chunk in chunks:
+                    if messages_refactor[-1] == '':
+                        if len(chunk.encode('utf-8')) <= available_bytes:
+                            messages_refactor[-1] = chunk
+                        else:
+                            chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
+                            messages_refactor.extend(chunksplit)
+                    elif len((messages_refactor[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
+                        if chunknum:
+                            messages_refactor[-1] = messages_refactor[-1] + " " + chunk
+                        else:
+                            messages_refactor[-1] = messages_refactor[-1] + message_padding + chunk
                     else:
-                        chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
-                        text_refactor.extend(chunksplit)
-        return text_refactor
+                        if len(chunk.encode('utf-8')) <= available_bytes:
+                            messages_refactor.append(chunk)
+                        else:
+                            chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
+                            messages_refactor.extend(chunksplit)
+                    chunknum += 1
+        return messages_refactor
 
 
 class SopelOSD:
@@ -117,9 +131,6 @@ class SopelOSD:
         will default to ``1``.
         """
 
-        if not isinstance(messages, list):
-            messages = [messages]
-
         text_method = text_method.upper()
         if text_method == 'SAY' or text_method not in ['NOTICE', 'ACTION']:
             text_method = 'PRIVMSG'
@@ -155,40 +166,7 @@ class SopelOSD:
         max_recipients_bytes = max(groupbytes)
         available_bytes -= max_recipients_bytes
 
-        text_refactor = tools.get_sendable_message_list("works don't it", available_bytes)
-        stderr("[Sopel-OSD] " + str(text_refactor))
-
-        messages_refactor = ['']
-        # TODO add configuration for padding amount
-        message_padding = 4 * " "
-        for message in messages:
-            if len((messages_refactor[-1] + message_padding + message).encode('utf-8')) <= available_bytes:
-                if messages_refactor[-1] == '':
-                    messages_refactor[-1] = message
-                else:
-                    messages_refactor[-1] = messages_refactor[-1] + message_padding + message
-            else:
-                chunknum = 0
-                chunks = message.split()
-                for chunk in chunks:
-                    if messages_refactor[-1] == '':
-                        if len(chunk.encode('utf-8')) <= available_bytes:
-                            messages_refactor[-1] = chunk
-                        else:
-                            chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
-                            messages_refactor.extend(chunksplit)
-                    elif len((messages_refactor[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
-                        if chunknum:
-                            messages_refactor[-1] = messages_refactor[-1] + " " + chunk
-                        else:
-                            messages_refactor[-1] = messages_refactor[-1] + message_padding + chunk
-                    else:
-                        if len(chunk.encode('utf-8')) <= available_bytes:
-                            messages_refactor.append(chunk)
-                        else:
-                            chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
-                            messages_refactor.extend(chunksplit)
-                    chunknum += 1
+        messages_refactor = tools.get_sendable_message_list(messages, available_bytes)
 
         if max_messages >= 1:
             messages_refactor = messages_refactor[:max_messages]
