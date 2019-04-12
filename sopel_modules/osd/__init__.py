@@ -237,9 +237,9 @@ class SopelOSD:
                     if not recipient_stack['flood_left']:
                         elapsed = time.time() - recipient_stack['messages'][-1][0]
                         penalty = float(max(0, len(text) - 50)) / 70
-                        # TODO
-                        # wait = self.config.core.flood_empty_wait + penalty
-                        wait = 0.7 + penalty
+                        # Never wait more than 2 seconds
+                        # wait = min(self.config.core.flood_empty_wait + penalty, 2) # TODO
+                        wait = min(0.7 + penalty, 2)
                         if elapsed < wait:
                             time.sleep(wait - elapsed)
 
