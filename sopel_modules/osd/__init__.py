@@ -107,17 +107,15 @@ class ToolsOSD:
 
         return available_bytes
 
-    def get_sendable_message_list(messages, available_bytes=400):
-        """Get a sendable list of ``text`` message, with its excess when needed.
-
-        :param str txt: unicode string of text to send, or list of strings
-        :param int available_bytes: maximum length of the message to be sendable
-        :return: a list of text.
-
+    def get_sendable_message_list(messages, max_length=400):
+        """Get a sendable ``text`` message list.
+        :param str txt: unicode string of text to send
+        :param int max_length: maximum length of the message to be sendable
+        :return: a tuple of two values, the sendable text and its excess text
         We're arbitrarily saying that the max is 400 bytes of text when
-        messages will be split (if not specified).
-
-        The `available_bytes` is the max length of text in **bytes**, but we take
+        messages will be split. Otherwise, we'd have to account for the bot's
+        hostmask, which is hard.
+        The `max_length` is the max length of text in **bytes**, but we take
         care of unicode 2-bytes characters, by working on the unicode string,
         then making sure the bytes version is smaller than the max length.
         """
@@ -127,35 +125,59 @@ class ToolsOSD:
 
         messages_list = ['']
         message_padding = 4 * " "
+
         for message in messages:
-            if len((messages_list[-1] + message_padding + message).encode('utf-8')) <= available_bytes:
+            if len((messages_list[-1] + message_padding + message).encode('utf-8')) <= max_length:
                 if messages_list[-1] == '':
                     messages_list[-1] = message
                 else:
                     messages_list[-1] = messages_list[-1] + message_padding + message
             else:
-                chunknum = 0
-                chunks = message.split()
-                for chunk in chunks:
-                    if messages_list[-1] == '':
-                        if len(chunk.encode('utf-8')) <= available_bytes:
-                            messages_list[-1] = chunk
-                        else:
-                            chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
-                            messages_list.extend(chunksplit)
-                    elif len((messages_list[-1] + " " + chunk).encode('utf-8')) <= available_bytes:
-                        if chunknum:
-                            messages_list[-1] = messages_list[-1] + " " + chunk
-                        else:
-                            messages_list[-1] = messages_list[-1] + message_padding + chunk
+                text_list = []
+                while len(message.encode('utf-8')) > max_length:
+                    last_space = message.rfind(' ', 0, max_length)
+                    if last_space == -1:
+                        # No last space, just split where it is possible
+                        text_list.append(message[:max_length])
+                        message = message[max_length:]
                     else:
-                        if len(chunk.encode('utf-8')) <= available_bytes:
-                            messages_list.append(chunk)
-                        else:
-                            chunksplit = map(''.join, zip(*[iter(chunk)] * available_bytes))
-                            messages_list.extend(chunksplit)
-                    chunknum += 1
+                        # Split at the last best space found
+                        text_list.append(message[:last_space])
+                        message = message[last_space:]
+                if len(message.encode('utf-8')):
+                    text_list.append(message)
+                messages_list.extend(text_list)
+
         return messages_list
+
+        def get_sendable_message_list(text, max_length=400):
+            """Get a sendable ``text`` message list.
+            :param str txt: unicode string of text to send
+            :param int max_length: maximum length of the message to be sendable
+            :return: a tuple of two values, the sendable text and its excess text
+            We're arbitrarily saying that the max is 400 bytes of text when
+            messages will be split. Otherwise, we'd have to account for the bot's
+            hostmask, which is hard.
+            The `max_length` is the max length of text in **bytes**, but we take
+            care of unicode 2-bytes characters, by working on the unicode string,
+            then making sure the bytes version is smaller than the max length.
+            """
+            text_list = []
+
+            while len(text.encode('utf-8')) > max_length:
+                last_space = text.rfind(' ', 0, max_length)
+                if last_space == -1:
+                    # No last space, just split where it is possible
+                    text_list.append(text[:max_length])
+                    text = text[max_length:]
+                else:
+                    # Split at the last best space found
+                    text_list.append(text[:last_space])
+                    text = text[last_space:]
+            if len(text.encode('utf-8')):
+                text_list.append(text)
+
+            return text_list
 
 
 class SopelOSD:
