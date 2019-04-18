@@ -61,21 +61,21 @@ def parse_event_005(bot, trigger):
         return
     parameters = trigger.args[1:-1]
     for param in parameters:
-        stderr(param)
-        if '=' not in param or not param.startswith("TARGMAX"):
-            pass
-        param = str(param).split('=')[1]
-        settings = str(param).split(',')
-        for setting in settings:
-            if not setting.startswith(tuple(["NOTICE", "PRIVMSG"])):
-                pass
-            setting = str(settings).split(':')[0]
-            value = str(settings).split(':')[1] or None
-            if value:
-                if setting == 'NOTICE':
-                    bot.config.MAXTARGCONFIG.notice = int(value)
-                elif setting == 'PRIVMSG':
-                    bot.config.MAXTARGCONFIG.privmsg = int(value)
+        if '=' in param:
+            if not param.startswith("TARGMAX"):
+                stderr(param)
+                param = str(param).split('=')[1]
+                settings = str(param).split(',')
+                for setting in settings:
+                    if not setting.startswith(tuple(["NOTICE", "PRIVMSG"])):
+                        pass
+                    setting = str(settings).split(':')[0]
+                    value = str(settings).split(':')[1] or None
+                    if value:
+                        if setting == 'NOTICE':
+                            bot.config.MAXTARGCONFIG.notice = int(value)
+                        elif setting == 'PRIVMSG':
+                            bot.config.MAXTARGCONFIG.privmsg = int(value)
     stderr("privmsg   " + str(bot.config.MAXTARGCONFIG.privmsg))
     stderr("notice   " + str(bot.config.MAXTARGCONFIG.notice))
 
