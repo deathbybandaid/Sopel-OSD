@@ -61,7 +61,7 @@ def parse_event_005(bot, trigger):
         return
     parameters = trigger.args[1:-1]
     for param in parameters:
-        param = str(param)
+        stderr(param)
         if '=' not in param or not param.startswith("TARGMAX"):
             pass
         param = str(param).split('=')[1]
