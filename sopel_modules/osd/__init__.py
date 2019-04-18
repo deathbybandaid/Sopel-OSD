@@ -150,35 +150,6 @@ class ToolsOSD:
 
         return messages_list
 
-        def get_sendable_message_list(text, max_length=400):
-            """Get a sendable ``text`` message list.
-            :param str txt: unicode string of text to send
-            :param int max_length: maximum length of the message to be sendable
-            :return: a tuple of two values, the sendable text and its excess text
-            We're arbitrarily saying that the max is 400 bytes of text when
-            messages will be split. Otherwise, we'd have to account for the bot's
-            hostmask, which is hard.
-            The `max_length` is the max length of text in **bytes**, but we take
-            care of unicode 2-bytes characters, by working on the unicode string,
-            then making sure the bytes version is smaller than the max length.
-            """
-            text_list = []
-
-            while len(text.encode('utf-8')) > max_length:
-                last_space = text.rfind(' ', 0, max_length)
-                if last_space == -1:
-                    # No last space, just split where it is possible
-                    text_list.append(text[:max_length])
-                    text = text[max_length:]
-                else:
-                    # Split at the last best space found
-                    text_list.append(text[:last_space])
-                    text = text[last_space:]
-            if len(text.encode('utf-8')):
-                text_list.append(text)
-
-            return text_list
-
 
 class SopelOSD:
 
