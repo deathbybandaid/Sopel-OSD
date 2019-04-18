@@ -67,8 +67,6 @@ def parse_event_005(bot, trigger):
                 settings = str(param).split(',')
                 stderr(settings)
                 for setting in settings:
-                    if not setting.startswith(tuple(["NOTICE", "PRIVMSG"])):
-                        pass
                     setting = str(settings).split(':')[0]
                     value = str(settings).split(':')[1] or None
                     if value:
