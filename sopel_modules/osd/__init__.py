@@ -79,8 +79,8 @@ def parse_event_005(bot, trigger):
                                 bot.config.MAXTARGCONFIG.notice = int(value)
                             elif setting.upper() == 'PRIVMSG':
                                 bot.config.MAXTARGCONFIG.privmsg = int(value)
-    stderr("privmsg   " + str(bot.config.MAXTARGCONFIG.privmsg))
-    stderr("notice   " + str(bot.config.MAXTARGCONFIG.notice))
+    # stderr("privmsg   " + str(bot.config.MAXTARGCONFIG.privmsg))
+    # stderr("notice   " + str(bot.config.MAXTARGCONFIG.notice))
 
 
 class MAXTARGCONFIG(StaticSection):
