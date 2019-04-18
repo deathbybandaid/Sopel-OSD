@@ -72,12 +72,13 @@ def parse_event_005(bot, trigger):
                         try:
                             value = str(setting).split(':')[1] or 1
                         except IndexError:
-                            pass
-                        stderr(str(setting) + " test " + str(value))
-                        if setting.upper() == 'NOTICE':
-                            bot.config.MAXTARGCONFIG.notice = int(value)
-                        elif setting.upper() == 'PRIVMSG':
-                            bot.config.MAXTARGCONFIG.privmsg = int(value)
+                            value = None
+                        if value:
+                            stderr(str(setting) + " test " + str(value))
+                            if setting.upper() == 'NOTICE':
+                                bot.config.MAXTARGCONFIG.notice = int(value)
+                            elif setting.upper() == 'PRIVMSG':
+                                bot.config.MAXTARGCONFIG.privmsg = int(value)
     stderr("privmsg   " + str(bot.config.MAXTARGCONFIG.privmsg))
     stderr("notice   " + str(bot.config.MAXTARGCONFIG.notice))
 
