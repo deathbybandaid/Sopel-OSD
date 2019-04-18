@@ -64,8 +64,8 @@ def parse_event_005(bot, trigger):
         if '=' in param:
             if param.startswith("TARGMAX"):
                 param = str(param).split('=')[1]
-                stderr(str(param) + " test " + str(param))
                 settings = str(param).split(',')
+                stderr(str(settings))
                 for setting in settings:
                     setting = str(settings).split(':')[0]
                     value = str(settings).split(':')[1] or None
