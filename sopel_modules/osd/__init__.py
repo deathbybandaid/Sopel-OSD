@@ -10,8 +10,9 @@ Sopel OSD is a "niche" method of displaying text in a Sopel bot
 from __future__ import unicode_literals, absolute_import, division, print_function
 
 import sopel.bot
-from sopel import tools
+from sopel import tools, module
 from sopel.tools import stderr, Identifier
+from sopel.config.types import StaticSection, ValidatedAttribute
 
 import time
 from collections import abc
@@ -23,7 +24,9 @@ __version__ = '0.1.0'
 
 
 def configure(config):
-    pass
+    config.define_section("MAXTARGCONFIG", MAXTARGCONFIG, validate=False)
+    config.MAXTARGCONFIG.configure_setting('notice', 'MAXTARG limit for NOTICE')
+    config.MAXTARGCONFIG.configure_setting('privmsg', 'MAXTARG limit for PRIVMSG')
 
 
 def setup(bot):
@@ -42,6 +45,43 @@ def setup(bot):
     bot.SopelWrapper.action = SopelOSD.SopelWrapper.action
     bot.SopelWrapper.notice = SopelOSD.SopelWrapper.notice
     bot.SopelWrapper.reply = SopelOSD.SopelWrapper.reply
+
+    # verify config settings for server
+    stderr("[Sopel-OSD] Checking for config settings.")
+    bot.config.define_section("MAXTARGCONFIG", MAXTARGCONFIG, validate=False)
+    stderr("privmsg   " + str(bot.config.MAXTARGCONFIG.privmsg))
+    stderr("notice   " + str(bot.config.MAXTARGCONFIG.notice))
+
+
+# RPL_ISUPPORT = '005'
+@module.event('005')
+@module.rule('.*')
+def parse_event_005(bot, trigger):
+    if trigger.args[-1] != 'are supported by this server':
+        return
+    parameters = trigger.args[1:-1]
+    for param in parameters:
+        if '=' not in param or not param.startswith("TARGMAX"):
+            pass
+        param = param.split('=')[1]
+        settings = param.split(',')
+        for setting in settings:
+            if not setting.startswith(tuple(["NOTICE", "PRIVMSG"])):
+                pass
+            setting = settings.split(':')[0]
+            value = settings.split(':')[1] or None
+            if value:
+                if setting == 'NOTICE':
+                    bot.config.MAXTARGCONFIG.notice = int(value)
+                elif setting == 'PRIVMSG':
+                    bot.config.MAXTARGCONFIG.privmsg = int(value)
+    stderr("privmsg   " + str(bot.config.MAXTARGCONFIG.privmsg))
+    stderr("notice   " + str(bot.config.MAXTARGCONFIG.notice))
+
+
+class MAXTARGCONFIG(StaticSection):
+    notice = ValidatedAttribute('notice', default=1)
+    privmsg = ValidatedAttribute('privmsg', default=1)
 
 
 class ToolsOSD:
