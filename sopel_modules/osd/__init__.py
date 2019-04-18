@@ -49,8 +49,6 @@ def setup(bot):
     # verify config settings for server
     stderr("[Sopel-OSD] Checking for config settings.")
     bot.config.define_section("MAXTARGCONFIG", MAXTARGCONFIG, validate=False)
-    stderr("privmsg   " + str(bot.config.MAXTARGCONFIG.privmsg))
-    stderr("notice   " + str(bot.config.MAXTARGCONFIG.notice))
 
 
 # RPL_ISUPPORT = '005'
@@ -68,19 +66,15 @@ def parse_event_005(bot, trigger):
                 for setting in settings:
                     settingname = str(setting).split(':')[0]
                     if settingname.upper() in ['NOTICE', 'PRIVMSG']:
-                        stderr(str(settingname) + " test ")
                         try:
                             value = str(setting).split(':')[1] or None
                         except IndexError:
                             value = None
                         if value:
-                            stderr(str(settingname) + " test " + str(value))
                             if settingname.upper() == 'NOTICE':
                                 bot.config.MAXTARGCONFIG.notice = int(value)
                             elif settingname.upper() == 'PRIVMSG':
                                 bot.config.MAXTARGCONFIG.privmsg = int(value)
-    stderr("privmsg   " + str(bot.config.MAXTARGCONFIG.privmsg))
-    stderr("notice   " + str(bot.config.MAXTARGCONFIG.notice))
 
 
 class MAXTARGCONFIG(StaticSection):
@@ -90,7 +84,7 @@ class MAXTARGCONFIG(StaticSection):
 
 class ToolsOSD:
 
-    def get_message_recipientgroups(bot, recipients):
+    def get_message_recipientgroups(bot, recipients, text_method):
         """
         Split recipients into groups based on server capabilities.
         This defaults to 4
@@ -111,8 +105,11 @@ class ToolsOSD:
         if not len(recipients):
             raise ValueError("Recipients list empty.")
 
-        maxtargets = 4
-        # TODO server.capabilities.maxtargets
+        if text_method == 'NOTICE':
+            maxtargets = bot.config.MAXTARGCONFIG.notice
+        elif text_method in ['PRIVMSG', 'ACTION']:
+            maxtargets = bot.config.MAXTARGCONFIG.privmsg
+
         recipientgroups = []
         while len(recipients):
             recipients_part = ','.join(x for x in recipients[-maxtargets:])
@@ -234,7 +231,7 @@ class SopelOSD:
         if text_method == 'SAY' or text_method not in ['NOTICE', 'ACTION']:
             text_method = 'PRIVMSG'
 
-        recipientgroups = tools.get_message_recipientgroups(self, recipients)
+        recipientgroups = tools.get_message_recipientgroups(self, recipients, text_method)
         available_bytes = tools.get_available_message_bytes(self, recipientgroups)
         messages_list = tools.get_sendable_message_list(messages, available_bytes)
 
