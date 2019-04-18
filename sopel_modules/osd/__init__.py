@@ -66,21 +66,21 @@ def parse_event_005(bot, trigger):
                 param = str(param).split('=')[1]
                 settings = str(param).split(',')
                 for setting in settings:
-                    setting = str(setting).split(':')[0]
-                    if setting.upper() in ['NOTICE', 'PRIVMSG']:
-                        stderr(str(setting) + " test ")
+                    settingname = str(setting).split(':')[0]
+                    if settingname.upper() in ['NOTICE', 'PRIVMSG']:
+                        stderr(str(settingname) + " test ")
                         try:
-                            value = str(setting).split(':')[1] or 1
+                            value = str(setting).split(':')[1] or None
                         except IndexError:
                             value = None
                         if value:
-                            stderr(str(setting) + " test " + str(value))
-                            if setting.upper() == 'NOTICE':
+                            stderr(str(settingname) + " test " + str(value))
+                            if settingname.upper() == 'NOTICE':
                                 bot.config.MAXTARGCONFIG.notice = int(value)
-                            elif setting.upper() == 'PRIVMSG':
+                            elif settingname.upper() == 'PRIVMSG':
                                 bot.config.MAXTARGCONFIG.privmsg = int(value)
-    # stderr("privmsg   " + str(bot.config.MAXTARGCONFIG.privmsg))
-    # stderr("notice   " + str(bot.config.MAXTARGCONFIG.notice))
+    stderr("privmsg   " + str(bot.config.MAXTARGCONFIG.privmsg))
+    stderr("notice   " + str(bot.config.MAXTARGCONFIG.notice))
 
 
 class MAXTARGCONFIG(StaticSection):
