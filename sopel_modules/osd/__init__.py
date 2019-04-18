@@ -109,6 +109,7 @@ class ToolsOSD:
             maxtargets = bot.config.MAXTARGCONFIG.notice
         elif text_method in ['PRIVMSG', 'ACTION']:
             maxtargets = bot.config.MAXTARGCONFIG.privmsg
+        maxtargets = int(maxtargets)
 
         recipientgroups = []
         while len(recipients):
