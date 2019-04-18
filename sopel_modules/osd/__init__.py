@@ -10,8 +10,9 @@ Sopel OSD is a "niche" method of displaying text in a Sopel bot
 from __future__ import unicode_literals, absolute_import, division, print_function
 
 import sopel.bot
-from sopel import tools
+from sopel import tools, module
 from sopel.tools import stderr, Identifier
+from sopel.config.types import StaticSection, ValidatedAttribute
 
 import time
 from collections import abc
@@ -23,7 +24,9 @@ __version__ = '0.1.0'
 
 
 def configure(config):
-    pass
+    config.define_section("MAXTARGCONFIG", MAXTARGCONFIG, validate=False)
+    config.MAXTARGCONFIG.configure_setting('notice', 'MAXTARG limit for NOTICE')
+    config.MAXTARGCONFIG.configure_setting('privmsg', 'MAXTARG limit for PRIVMSG')
 
 
 def setup(bot):
@@ -43,10 +46,45 @@ def setup(bot):
     bot.SopelWrapper.notice = SopelOSD.SopelWrapper.notice
     bot.SopelWrapper.reply = SopelOSD.SopelWrapper.reply
 
+    # verify config settings for server
+    stderr("[Sopel-OSD] Checking for config settings.")
+    bot.config.define_section("MAXTARGCONFIG", MAXTARGCONFIG, validate=False)
+
+
+# RPL_ISUPPORT = '005'
+@module.event('005')
+@module.rule('.*')
+def parse_event_005(bot, trigger):
+    if trigger.args[-1] != 'are supported by this server':
+        return
+    parameters = trigger.args[1:-1]
+    for param in parameters:
+        if '=' in param:
+            if param.startswith("TARGMAX"):
+                param = str(param).split('=')[1]
+                settings = str(param).split(',')
+                for setting in settings:
+                    settingname = str(setting).split(':')[0]
+                    if settingname.upper() in ['NOTICE', 'PRIVMSG']:
+                        try:
+                            value = str(setting).split(':')[1] or None
+                        except IndexError:
+                            value = None
+                        if value:
+                            if settingname.upper() == 'NOTICE':
+                                bot.config.MAXTARGCONFIG.notice = int(value)
+                            elif settingname.upper() == 'PRIVMSG':
+                                bot.config.MAXTARGCONFIG.privmsg = int(value)
+
+
+class MAXTARGCONFIG(StaticSection):
+    notice = ValidatedAttribute('notice', default=1)
+    privmsg = ValidatedAttribute('privmsg', default=1)
+
 
 class ToolsOSD:
 
-    def get_message_recipientgroups(bot, recipients):
+    def get_message_recipientgroups(bot, recipients, text_method):
         """
         Split recipients into groups based on server capabilities.
         This defaults to 4
@@ -67,8 +105,12 @@ class ToolsOSD:
         if not len(recipients):
             raise ValueError("Recipients list empty.")
 
-        maxtargets = 4
-        # TODO server.capabilities.maxtargets
+        if text_method == 'NOTICE':
+            maxtargets = bot.config.MAXTARGCONFIG.notice
+        elif text_method in ['PRIVMSG', 'ACTION']:
+            maxtargets = bot.config.MAXTARGCONFIG.privmsg
+        maxtargets = int(maxtargets)
+
         recipientgroups = []
         while len(recipients):
             recipients_part = ','.join(x for x in recipients[-maxtargets:])
@@ -150,35 +192,6 @@ class ToolsOSD:
 
         return messages_list
 
-        def get_sendable_message_list(text, max_length=400):
-            """Get a sendable ``text`` message list.
-            :param str txt: unicode string of text to send
-            :param int max_length: maximum length of the message to be sendable
-            :return: a tuple of two values, the sendable text and its excess text
-            We're arbitrarily saying that the max is 400 bytes of text when
-            messages will be split. Otherwise, we'd have to account for the bot's
-            hostmask, which is hard.
-            The `max_length` is the max length of text in **bytes**, but we take
-            care of unicode 2-bytes characters, by working on the unicode string,
-            then making sure the bytes version is smaller than the max length.
-            """
-            text_list = []
-
-            while len(text.encode('utf-8')) > max_length:
-                last_space = text.rfind(' ', 0, max_length)
-                if last_space == -1:
-                    # No last space, just split where it is possible
-                    text_list.append(text[:max_length])
-                    text = text[max_length:]
-                else:
-                    # Split at the last best space found
-                    text_list.append(text[:last_space])
-                    text = text[last_space:]
-            if len(text.encode('utf-8')):
-                text_list.append(text)
-
-            return text_list
-
 
 class SopelOSD:
 
@@ -219,7 +232,7 @@ class SopelOSD:
         if text_method == 'SAY' or text_method not in ['NOTICE', 'ACTION']:
             text_method = 'PRIVMSG'
 
-        recipientgroups = tools.get_message_recipientgroups(self, recipients)
+        recipientgroups = tools.get_message_recipientgroups(self, recipients, text_method)
         available_bytes = tools.get_available_message_bytes(self, recipientgroups)
         messages_list = tools.get_sendable_message_list(messages, available_bytes)
 
