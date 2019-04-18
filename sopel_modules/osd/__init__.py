@@ -71,8 +71,9 @@ def parse_event_005(bot, trigger):
             setting = str(setting).split(':')[0]
             if setting.upper() not in ['NOTICE', 'PRIVMSG']:
                 pass
+            stderr(str(setting) + " test ")
             try:
-                value = str(setting).split(':')[1] or None
+                value = str(setting).split(':')[1] or 1
             except IndexError:
                 pass
             stderr(str(setting) + " test " + str(value))
