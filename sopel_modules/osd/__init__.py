@@ -63,8 +63,8 @@ def parse_event_005(bot, trigger):
     for param in parameters:
         if '=' not in param or not param.startswith("TARGMAX"):
             pass
-        param = param.split('=')[1]
-        settings = param.split(',')
+        param = str(param).split('=')[1]
+        settings = str(param).split(',')
         for setting in settings:
             if not setting.startswith(tuple(["NOTICE", "PRIVMSG"])):
                 pass
