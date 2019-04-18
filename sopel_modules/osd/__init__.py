@@ -68,9 +68,9 @@ def parse_event_005(bot, trigger):
                 for setting in settings:
                     setting = str(settings).split(':')[0]
                     value = str(settings).split(':')[1] or None
+                    stderr(str(setting) + " test " + str(value))
                     if value:
                         if setting.upper() == 'NOTICE':
-                            stderr(str(setting) + " test " + str(value))
                             bot.config.MAXTARGCONFIG.notice = int(value)
                         elif setting.upper() == 'PRIVMSG':
                             bot.config.MAXTARGCONFIG.privmsg = int(value)
