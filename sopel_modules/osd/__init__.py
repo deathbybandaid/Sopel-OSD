@@ -65,10 +65,10 @@ def parse_event_005(bot, trigger):
             if param.startswith("TARGMAX"):
                 param = str(param).split('=')[1]
                 settings = str(param).split(',')
-                stderr(str(settings))
                 for setting in settings:
-                    setting = str(settings).split(':')[0]
-                    value = str(settings).split(':')[1] or None
+                    setting = str(setting).split(':')[0]
+                    value = str(setting).split(':')[1] or None
+                    stderr(str(setting) + " test " + str(value))
                     if value:
                         if setting.upper() == 'NOTICE':
                             bot.config.MAXTARGCONFIG.notice = int(value)
