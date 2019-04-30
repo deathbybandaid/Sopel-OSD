@@ -243,7 +243,10 @@ class SopelOSD:
         if max_messages >= 1:
             messages_list = messages_list[:max_messages]
 
+        text_method_orig = text_method
+
         for recipientgroup in recipientgroups:
+            text_method = text_method_orig
 
             # No messages within the last 3 seconds? Go ahead!
             # Otherwise, wait so it's been at least 0.8 seconds + penalty
