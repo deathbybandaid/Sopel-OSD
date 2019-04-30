@@ -16,6 +16,7 @@ from sopel.config.types import StaticSection, ValidatedAttribute
 
 import time
 from collections import abc
+import sys
 
 
 __author__ = 'Sam Zick'
@@ -96,7 +97,10 @@ class ToolsOSD:
             * dict_keys handy for bot.channels.keys()
         """
 
-        if isinstance(recipients, abc.KeysView):
+        if sys.version_info.major >= 3:
+            if isinstance(recipients, abc.KeysView):
+                recipients = [x for x in recipients]
+        if isinstance(recipients, dict):
             recipients = [x for x in recipients]
 
         if not isinstance(recipients, list):
