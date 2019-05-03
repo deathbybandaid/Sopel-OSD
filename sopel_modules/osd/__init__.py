@@ -262,18 +262,6 @@ class SopelOSD:
             })
             recipient_stack['dots'] = 0
 
-            # error handling for stock sopel
-            try:
-                keyerrortest = recipient_stack['messages'][-1][0]
-            except KeyError:
-                self.stack[recipient_id] = {
-                                            'messages': [],
-                                            'flood_left': 4,
-                                            'dots': 0,
-                                            # TODO
-                                            # 'flood_left': self.config.core.flood_burst_lines,
-                                            }
-
             for text in messages_list:
 
                 try:
