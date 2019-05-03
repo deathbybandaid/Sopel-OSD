@@ -21,7 +21,7 @@ import sys
 
 __author__ = 'Sam Zick'
 __email__ = 'sam@deathbybandaid.net'
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 
 def configure(config):
@@ -261,6 +261,18 @@ class SopelOSD:
                 # 'flood_left': self.config.core.flood_burst_lines,
             })
             recipient_stack['dots'] = 0
+
+            # error handling for stock sopel
+            try:
+                keyerrortest = recipient_stack['messages'][-1][0]
+            except KeyError:
+                self.stack[recipient_id] = {
+                                            'messages': [],
+                                            'flood_left': 4,
+                                            'dots': 0,
+                                            # TODO
+                                            # 'flood_left': self.config.core.flood_burst_lines,
+                                            }
 
             for text in messages_list:
 
