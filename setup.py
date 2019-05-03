@@ -27,7 +27,7 @@ with open('dev-requirements.txt') as dev_requirements_file:
 
 setup(
     name='sopel_modules.osd',
-    version='0.1.0',
+    version='0.1.1',
     description='Sopel OSD is a "niche" method of displaying text in a Sopel bot',
     long_description=readme + '\n\n' + history,
     author='Sam Zick',
